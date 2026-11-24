@@ -1,6 +1,7 @@
 boards:
   - {company: Cloudflare, type: greenhouse, slug: cloudflare}
   - {company: Optiver, type: greenhouse, slug: optiverus}
+  - {company: Databricks, type: greenhouse, slug: databricks}
   - {company: Waabi, type: lever, slug: waabi}
 # Add employer-owned JSON-LD JobPosting index/posting URLs with type: careers.
 forms: []
