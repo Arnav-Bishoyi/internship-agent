@@ -164,6 +164,7 @@ def install(home):
     label = "com.local.internship-agent"
     dest = Path.home() / "Library" / "LaunchAgents" / (label + ".plist")
     dest.parent.mkdir(parents=True, exist_ok=True)
+    previous = dest.read_bytes() if dest.exists() else b""
     dest.write_bytes(
         plistlib.dumps(
             {
@@ -193,7 +194,19 @@ def install(home):
         ).returncode
         == 0
     ):
+        if previous == dest.read_bytes():
+            subprocess.run(
+                ["launchctl", "kickstart", "-k", target + "/" + label], check=True
+            )
+            print("Reloaded", label)
+            return
         subprocess.run(["launchctl", "bootout", target + "/" + label], check=True)
+        for _ in range(40):
+            if subprocess.run(
+                ["launchctl", "print", target + "/" + label], capture_output=True
+            ).returncode:
+                break
+            time.sleep(0.25)
     subprocess.run(["launchctl", "bootstrap", target, str(dest)], check=True)
     print("Installed and started", label)
 

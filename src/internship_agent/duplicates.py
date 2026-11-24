@@ -36,9 +36,8 @@ def org(s):
 
 def compare(job, rows):
     candidates = []
+    posting_url = canonical(job.url)
     for num, row in enumerate(rows, 2):
-        if org(row.get("Company", "")) != org(job.company):
-            continue
         role = row.get("Role", "")
         notes = row.get("Notes / Source", "")
         # Explanatory notes often mention other, explicitly distinct requisitions.
@@ -56,6 +55,9 @@ def compare(job, rows):
                 urls.add(canonical(url.rstrip(".,);")))
             except ValueError:
                 pass
+        same_org = org(row.get("Company", "")) == org(job.company)
+        if not same_org and posting_url not in urls:
+            continue
         terms = {
             norm(" ".join(m)).replace("autumn", "fall") for m in TERM.findall(role)
         }
@@ -70,11 +72,15 @@ def compare(job, rows):
         ) in urls
         if len(ids) == 1 and job.req and not exact:
             continue
-        title = norm(ID.sub("", role))
+        if not same_org:
+            candidates.append(Check("review", num))
+            continue
+        title = norm(TERM.sub("", ID.sub("", role))).replace("swe", "software engineer")
+        target = norm(job.title).replace("swe", "software engineer")
         similar = (
-            norm(job.title) in title
-            or (bool(title) and title in norm(job.title))
-            or SequenceMatcher(None, norm(job.title), title).ratio() >= 0.70
+            target in title
+            or (bool(title) and title in target)
+            or SequenceMatcher(None, target, title).ratio() >= 0.70
         )
         if not (exact or similar):
             continue

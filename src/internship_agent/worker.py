@@ -90,7 +90,27 @@ class Worker:
                 )
 
     def guard(self, j):
-        check = self.sheets().check(j)
+        try:
+            check = self.sheets().check(j)
+        except Exception:
+            with self.s.transaction():
+                self.s.block(
+                    "tracker-connection",
+                    {
+                        "company": "",
+                        "title": "Live tracker check failed",
+                        "url": "",
+                        "deadline": "",
+                        "reason": "Check Google OAuth, the tracker header, and Sheets connectivity. Submissions resume after a successful live read.",
+                        "uncertain": False,
+                    },
+                )
+            raise
+        with self.s.transaction():
+            if self.s.db.execute(
+                "UPDATE issues SET closed=1 WHERE id='tracker-connection' AND closed=0"
+            ).rowcount:
+                self.s.emit("close", "tracker-connection", {})
         if check.kind == "duplicate":
             self.s.state(j.key, "duplicate", preview={"tracker_row": check.row})
         if check.kind == "review":

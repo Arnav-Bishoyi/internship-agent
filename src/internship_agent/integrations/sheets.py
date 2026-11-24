@@ -32,7 +32,7 @@ class Sheets:
     def rows(self):
         data = self.values(self.tab, "A:K")
         if not data or tuple(data[0]) != HEADERS:
-            raise Review("Restore or remap the tracker header before submitting.")
+            raise RuntimeError("Restore or remap the tracker header before submitting.")
         return [dict(zip(HEADERS, r)) for r in data[1:]]
 
     def check(self, job):

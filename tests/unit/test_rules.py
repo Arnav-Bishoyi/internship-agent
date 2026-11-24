@@ -82,3 +82,17 @@ class Rules(unittest.TestCase):
             "Notes / Source": "ID: 123, also distinct from ID: 456",
         }
         self.assertEqual(compare(self.job, [row]).kind, "review")
+
+    def test_same_url_employer_alias(self):
+        row = self.row | {"Company": "Parent Company", "Notes / Source": self.job.url}
+        self.assertEqual(compare(self.job, [row]).kind, "review")
+
+    def test_abbreviated_title(self):
+        j = Job(
+            "Example",
+            "Software Engineer Intern",
+            "https://careers.example.org/jobs/123",
+            "123",
+        )
+        row = self.row | {"Role": "SWE Intern Summer 2027"}
+        self.assertEqual(compare(j, [row]).kind, "review")
