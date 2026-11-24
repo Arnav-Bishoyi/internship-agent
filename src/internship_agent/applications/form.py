@@ -1,4 +1,5 @@
 import re
+import base64
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -25,6 +26,7 @@ def session(job,form,profile,answers,year,*,live=False):
         context=browser.new_context(service_workers="block",accept_downloads=False)
         hosts={form["host"],*form.get("asset_hosts",[])}
         phase={"write":False}
+        upload={}
         def guard(route):
             req=route.request
             try:
@@ -35,7 +37,16 @@ def session(job,form,profile,answers,year,*,live=False):
                     route.abort()
                     return
                 # Screen each response before the browser can follow any redirects.
-                response=route.fetch(max_redirects=0,timeout=15000)
+                options={}
+                if req.method=="POST" and "multipart/form-data" in req.headers.get("content-type",""):
+                    if not upload or canonical(req.url)!=upload["url"]:
+                        route.abort()
+                        return
+                    headers=dict(req.headers)
+                    headers.pop("content-length",None)
+                    headers["content-type"]=upload["type"]
+                    options={"headers":headers,"post_data":upload["body"]}
+                response=route.fetch(max_redirects=0,timeout=15000,**options)
                 if 300<=response.status<400:
                     route.abort()
                 else:
@@ -106,6 +117,21 @@ def session(job,form,profile,answers,year,*,live=False):
                     raise Review("Review employer form validation errors.")
                 btn=root.locator(form["submit"])
                 if btn.count()!=1 or not btn.is_enabled(): raise Review("Check the Submit control.")
+                if live and root.evaluate("f => f.enctype === 'multipart/form-data'"):
+                    # Chromium omits uploaded bytes in intercepted request.postData.
+                    # Snapshot the actual form including the selected files and submitter.
+                    packet=root.evaluate("""async (f, selector) => {
+                        const button=f.querySelector(selector);
+                        const data=new FormData(f, button);
+                        const response=new Response(data);
+                        const bytes=new Uint8Array(await response.arrayBuffer());
+                        let binary='';
+                        for(let i=0;i<bytes.length;i+=32768)
+                            binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+                        return {body:btoa(binary),type:response.headers.get('content-type'),
+                                url:button.getAttribute('formaction') ? button.formAction : f.action};
+                    }""",form["submit"])
+                    upload.update(body=base64.b64decode(packet["body"]),type=packet["type"],url=canonical(packet["url"]))
             validate()
             preview={f["label"]:expected[f["selector"]][1] for f in form["fields"]}
             def submit():
