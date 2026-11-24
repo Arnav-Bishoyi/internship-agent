@@ -1,0 +1,16 @@
+# Synthetic example. Copy into your private employers.yaml only after adapting
+# selectors, field labels, receipt binding and permission to a real form.
+company: Example
+host: careers.example.org
+permission: Example only
+job_path: /jobs/\d+
+identity: '#opening'
+form: '#application'
+fields:
+  - {selector: '#email', label: Email, answer: email}
+  - {selector: '#resume', label: Resume, answer: resume, kind: file}
+submit: 'button[type=submit]'
+submit_path: /applications
+receipt:
+  selector: '#confirmation'
+  pattern: Application received

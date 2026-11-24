@@ -71,3 +71,12 @@ class Gmail:
             if len(values)==1: hits.append((mid,values.pop()))
             elif values: return None
         return hits[0] if len(hits)==1 else None
+
+    def has_receipt(self,rule,recipient,started,job):
+        sender=rule["sender"].lower()
+        for _,stamp,msg in self.messages(f"after:{int(started)-1} from:{sender} to:{recipient}"):
+            if stamp<started or addresses(msg,"From")!={sender} or recipient.lower() not in addresses(msg,"To"): continue
+            if not authenticated(msg,sender) or not re.fullmatch(rule["subject"],str(msg.get("Subject",""))): continue
+            text=BeautifulSoup(body(msg),"html.parser").get_text(" ",strip=True)
+            if re.search(rule["pattern"],text,re.I) and (job.req or job.title).casefold() in text.casefold(): return True
+        return False
