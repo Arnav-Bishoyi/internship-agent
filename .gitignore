@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+*.egg-info/
+.private/
+*.pdf
+*.sqlite*
+*.log
+.env*
+client_secret*.json
+*token*.json

@@ -1,0 +1,6 @@
+families:
+  software: [software, backend, full stack, full-stack, platform engineer]
+  embedded: [embedded, firmware, systems engineer]
+  ml: [machine learning, deep learning, applied scientist, computer vision, applied ai]
+  data: [data engineer, data platform]
+  quant: [quantitative develop, quant develop, trading systems]
